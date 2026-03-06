@@ -68,26 +68,33 @@ public class ComplexNumber {
 
     @Override
     public String toString() {
-        return String.format(Locale.ROOT, "%.6f+%.6fi", real, imaginary);
+        return String.format(Locale.ROOT, "%.6f_%.6f", real, imaginary);
     }
 
     public static ComplexNumber fromString(String str) {
         try {
             String s = str.trim();
-            if (!s.endsWith("i")) {
-                throw new IllegalArgumentException("Invalid complex number format (must end with i): " + str);
-            }
-            s = s.substring(0, s.length() - 1);
-
-            int splitIndex = s.lastIndexOf('+');
-            if (splitIndex <= 0) {
-                throw new IllegalArgumentException("Invalid complex number format (missing separator +): " + str);
+            String[] parts = s.split("_");
+            if (parts.length == 2) {
+                return new ComplexNumber(Double.parseDouble(parts[0]), Double.parseDouble(parts[1]));
             }
 
-            String realPart = s.substring(0, splitIndex);
-            String imagPart = s.substring(splitIndex + 1);
+            // Fallback to legacy format if needed (0.00+0.00i)
+            if (s.endsWith("i")) {
+                s = s.substring(0, s.length() - 1);
 
-            return new ComplexNumber(Double.parseDouble(realPart), Double.parseDouble(imagPart));
+                int splitIndex = s.lastIndexOf('+');
+                if (splitIndex <= 0) {
+                    throw new IllegalArgumentException("Invalid complex number format (missing separator +): " + str);
+                }
+
+                String realPart = s.substring(0, splitIndex);
+                String imagPart = s.substring(splitIndex + 1);
+
+                return new ComplexNumber(Double.parseDouble(realPart), Double.parseDouble(imagPart));
+            }
+
+            throw new IllegalArgumentException("Invalid complex number format: " + str);
         } catch (Exception e) {
             throw new IllegalArgumentException("Could not parse complex number: " + str, e);
         }

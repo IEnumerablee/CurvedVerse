@@ -9,7 +9,7 @@ import java.util.Optional;
 public abstract class IFSStrategy {
     private static final Map<String, IFSStrategy> registry = new ConcurrentHashMap<>();
     public static final int ATTRACTOR_MAX_DEPTH = 6;
-    public static final double ATTRACTOR_MIN_DISTANCE = 1e-3;
+    public static final double ATTRACTOR_MIN_DISTANCE = 0.3;
 
     private final List<Transformation> transformations;
     private List<ComplexNumber> attractors = Collections.emptyList();

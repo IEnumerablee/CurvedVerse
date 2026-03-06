@@ -14,11 +14,14 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import org.i212.curvedverse.Curvedverse;
+import org.i212.curvedverse.dimension.ComplexWorldDimensionManager;
 import org.i212.curvedverse.dimension.CurvedverseDimensionRegistry;
 import org.i212.curvedverse.dimension.DimensionMetadata;
 import org.i212.curvedverse.dimension.InterpolatedDimensionMetadata;
+import org.i212.curvedverse.util.ComplexNumber;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 
 @EventBusSubscriber(modid = Curvedverse.MODID)
@@ -43,7 +46,99 @@ public class CurvedverseCommands {
             .then(Commands.literal("unload")
                 .then(Commands.argument("key", StringArgumentType.string())
                         .executes(CurvedverseCommands::unloadDimension)))
+            .then(Commands.literal("start")
+                .executes(CurvedverseCommands::teleportToStart))
+            .then(Commands.literal("exits")
+                .executes(CurvedverseCommands::listExits))
+            .then(Commands.literal("jump")
+                .then(Commands.argument("index", com.mojang.brigadier.arguments.IntegerArgumentType.integer(0))
+                        .executes(CurvedverseCommands::jumpToExit)))
         );
+    }
+
+    private static int teleportToStart(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        ComplexWorldDimensionManager manager = Curvedverse.getComplexWorldManager();
+
+        if (manager == null) {
+            source.sendFailure(Component.literal("ComplexWorldDimensionManager not initialized!"));
+            return 0;
+        }
+
+        ServerLevel level = manager.getOrCreateStartDimension();
+        return teleportEntityToLevel(source, level);
+    }
+
+    private static int listExits(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        ComplexWorldDimensionManager manager = Curvedverse.getComplexWorldManager();
+
+        if (manager == null) {
+            source.sendFailure(Component.literal("ComplexWorldDimensionManager not initialized!"));
+            return 0;
+        }
+
+        ServerLevel currentLevel = source.getLevel();
+        List<ComplexNumber> exits = manager.getTransitionPoints(currentLevel);
+
+        if (exits.isEmpty()) {
+            source.sendSuccess(() -> Component.literal("No exits found from this dimension."), false);
+            return 1;
+        }
+
+        source.sendSuccess(() -> Component.literal("Possible exits (Dragon Curve):"), false);
+        for (int i = 0; i < exits.size(); i++) {
+            final int index = i;
+            final ComplexNumber point = exits.get(i);
+            source.sendSuccess(() -> Component.literal(String.format("[%d] Point: %s", index, point.toString())), false);
+        }
+
+        return exits.size();
+    }
+
+    private static int jumpToExit(CommandContext<CommandSourceStack> context) {
+        int index = com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(context, "index");
+        CommandSourceStack source = context.getSource();
+        ComplexWorldDimensionManager manager = Curvedverse.getComplexWorldManager();
+
+        if (manager == null) {
+            source.sendFailure(Component.literal("ComplexWorldDimensionManager not initialized!"));
+            return 0;
+        }
+
+        ServerLevel currentLevel = source.getLevel();
+        List<ComplexNumber> exits = manager.getTransitionPoints(currentLevel);
+
+        if (index < 0 || index >= exits.size()) {
+            source.sendFailure(Component.literal("Invalid exit index: " + index));
+            return 0;
+        }
+
+        ComplexNumber target = exits.get(index);
+        ServerLevel targetLevel = manager.transitionToPoint(target);
+
+        return teleportEntityToLevel(source, targetLevel);
+    }
+
+    private static int teleportEntityToLevel(CommandSourceStack source, ServerLevel targetLevel) {
+        Entity entity = source.getEntity();
+        if (entity == null) {
+            source.sendFailure(Component.literal("Only entities can teleport."));
+            return 0;
+        }
+
+        DimensionTransition transition = new DimensionTransition(
+            targetLevel,
+            entity.position(),
+            entity.getDeltaMovement(),
+            entity.getYRot(),
+            entity.getXRot(),
+            DimensionTransition.DO_NOTHING
+        );
+        entity.changeDimension(transition);
+
+        source.sendSuccess(() -> Component.literal("Teleported to " + targetLevel.dimension().location()), true);
+        return 1;
     }
 
     private static int createDimension(CommandContext<CommandSourceStack> context) {
@@ -95,23 +190,7 @@ public class CurvedverseCommands {
             return 0;
         }
 
-        Entity entity = source.getEntity();
-        if (entity != null) {
-            DimensionTransition transition = new DimensionTransition(
-                level,
-                entity.position(),
-                entity.getDeltaMovement(),
-                entity.getYRot(),
-                entity.getXRot(),
-                DimensionTransition.DO_NOTHING
-            );
-            entity.changeDimension(transition);
-            source.sendSuccess(() -> Component.literal("Teleported to dimension with key: " + key), true);
-            return 1;
-        } else {
-            source.sendFailure(Component.literal("Command source is not an entity"));
-        }
-        return 0;
+        return teleportEntityToLevel(source, level);
     }
 
     private static int listDimensions(CommandContext<CommandSourceStack> context) {

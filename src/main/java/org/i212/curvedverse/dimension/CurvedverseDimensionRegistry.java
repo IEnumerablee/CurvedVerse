@@ -27,7 +27,6 @@ import java.lang.reflect.Type;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -98,11 +97,28 @@ public class CurvedverseDimensionRegistry extends SavedData {
 
     private void saveToJson() {
         Path savePath = server.getWorldPath(LevelResource.ROOT).resolve(SAVE_FILENAME);
-        try (FileWriter writer = new FileWriter(savePath.toFile())) {
+        File file = savePath.toFile();
+        File tempFile = new File(file.getAbsolutePath() + ".tmp");
+
+        try (FileWriter writer = new FileWriter(tempFile)) {
             GSON.toJson(dimensions, writer);
-            LOGGER.info("Saved {} dimensions to {}", dimensions.size(), SAVE_FILENAME);
+            writer.flush();
         } catch (IOException e) {
-            LOGGER.error("Failed to save dimension registry to JSON", e);
+            LOGGER.error("Failed to save dimension registry to temporary JSON", e);
+            return;
+        }
+
+        try {
+            if (file.exists() && !file.delete()) {
+                LOGGER.error("Failed to delete old dimension registry file");
+            }
+            if (!tempFile.renameTo(file)) {
+                LOGGER.error("Failed to rename temporary dimension registry file to {}", SAVE_FILENAME);
+            } else {
+                LOGGER.info("Saved {} dimensions to {}", dimensions.size(), SAVE_FILENAME);
+            }
+        } catch (Exception e) {
+            LOGGER.error("Error finalizing dimension registry save", e);
         }
     }
 
@@ -185,6 +201,7 @@ public class CurvedverseDimensionRegistry extends SavedData {
         if (level != null) {
             LOGGER.info("Successfully created dimension {}", meta.getDimensionId());
             registerDimension(meta);
+            // Лишняя подстраховка, но registerDimension уже вызывает saveToJson()
         } else {
             LOGGER.error("Failed to create dimension {}", meta.getDimensionId());
         }

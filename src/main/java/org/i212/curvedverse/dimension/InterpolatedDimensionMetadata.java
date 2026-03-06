@@ -10,6 +10,7 @@ import net.minecraft.world.level.levelgen.NoiseSettings;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
 import net.minecraft.server.MinecraftServer;
+import org.i212.curvedverse.util.ComplexNumber;
 
 import java.util.Collections;
 import java.util.List;
@@ -23,6 +24,7 @@ public class InterpolatedDimensionMetadata extends DimensionMetadata {
     private final double pollution;
     private final String biomeId;
     private final List<String> resources;
+    private ComplexNumber complexPos;
 
     public InterpolatedDimensionMetadata(String coordinate, ResourceLocation dimensionId,
                              double temperature, double humidity, double hostility, double pollution,
@@ -34,6 +36,7 @@ public class InterpolatedDimensionMetadata extends DimensionMetadata {
         this.pollution = pollution;
         this.biomeId = biomeId != null ? biomeId.toString() : null;
         this.resources = resources != null ? resources : Collections.emptyList();
+        parseCoordinates(coordinate);
     }
 
     public InterpolatedDimensionMetadata(String coordinate, String dimensionId,
@@ -46,7 +49,21 @@ public class InterpolatedDimensionMetadata extends DimensionMetadata {
         this.pollution = pollution;
         this.biomeId = biomeId;
         this.resources = resources != null ? resources : Collections.emptyList();
+        parseCoordinates(coordinate);
     }
+
+    private void parseCoordinates(String coordinate) {
+        try {
+            this.complexPos = ComplexNumber.fromString(coordinate);
+        } catch (Exception e) {
+            this.complexPos = new ComplexNumber(0, 0);
+        }
+    }
+
+    public ComplexNumber getComplexPos() { return complexPos; }
+
+    public double getReal() { return complexPos.getReal(); }
+    public double getImaginary() { return complexPos.getImaginary(); }
 
     public double getTemperature() { return temperature; }
     public double getHumidity() { return humidity; }

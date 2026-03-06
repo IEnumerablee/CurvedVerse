@@ -14,18 +14,21 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.storage.LevelResource;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
+import org.i212.curvedverse.dimension.ComplexWorldDimensionManager;
 import org.i212.curvedverse.dimension.CurvedverseDimensionRegistry;
 import org.slf4j.Logger;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.nio.file.Path;
+
 import org.i212.curvedverse.util.attractor.WorldAttractorManager;
 
 @Mod(Curvedverse.MODID)
 public class Curvedverse {
     public static final String MODID = "curvedverse";
     private static final Logger LOGGER = LogUtils.getLogger();
+    private static ComplexWorldDimensionManager complexWorldManager;
 
     public Curvedverse(IEventBus modEventBus, ModContainer modContainer) {
         modEventBus.addListener(this::commonSetup);
@@ -61,6 +64,11 @@ public class Curvedverse {
             } else {
                  LOGGER.warn("DragonCurve strategy not found, attractors not generated!");
             }
+
+            LOGGER.info("Initializing Complex World Dimension Manager...");
+            complexWorldManager = new ComplexWorldDimensionManager(server);
+
+            complexWorldManager.getOrCreateStartDimension();
 
         } catch (Exception e) {
             LOGGER.error("Failed to initialize dimension registry", e);
@@ -119,5 +127,9 @@ public class Curvedverse {
                 }
             }
         }
+    }
+
+    public static ComplexWorldDimensionManager getComplexWorldManager() {
+        return complexWorldManager;
     }
 }

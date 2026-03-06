@@ -16,6 +16,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import org.i212.curvedverse.Curvedverse;
 import org.i212.curvedverse.dimension.CurvedverseDimensionRegistry;
 import org.i212.curvedverse.dimension.DimensionMetadata;
+import org.i212.curvedverse.dimension.InterpolatedDimensionMetadata;
 
 import java.util.Collections;
 import java.util.Random;
@@ -63,10 +64,12 @@ public class CurvedverseCommands {
         double temp = random.nextDouble();
         double hum = random.nextDouble();
         double host = random.nextDouble();
+        double pollution = random.nextDouble();
         ResourceLocation biome = ResourceLocation.withDefaultNamespace("plains"); // Placeholder
         
         try {
-            ServerLevel level = registry.createAndRegister(key, id, temp, hum, host, biome, Collections.emptyList());
+            InterpolatedDimensionMetadata meta = new InterpolatedDimensionMetadata(key, id, temp, hum, host, pollution, biome, Collections.emptyList());
+            ServerLevel level = registry.createAndRegister(meta);
             if (level != null) {
                 source.sendSuccess(() -> Component.literal("Created dimension " + id + " with key: " + key), true);
                 return 1;

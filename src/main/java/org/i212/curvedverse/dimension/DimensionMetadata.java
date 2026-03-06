@@ -15,38 +15,21 @@ import net.minecraft.world.level.dimension.DimensionType;
 import java.util.Collections;
 import java.util.List;
 
-public class DimensionMetadata {
-    private final String coordinate;
-    private final String dimensionId;
-    
-    private final double temperature;
-    private final double humidity;
-    private final double hostility;
-    private final String biomeId;
-    private final List<String> resources;
+public abstract class DimensionMetadata {
+    protected final String coordinate;
+    protected final String dimensionId;
+    protected final String type;
 
-    public DimensionMetadata(String coordinate, ResourceLocation dimensionId,
-                             double temperature, double humidity, double hostility,
-                             ResourceLocation biomeId, List<String> resources) {
+    public DimensionMetadata(String coordinate, ResourceLocation dimensionId, String type) {
         this.coordinate = coordinate;
         this.dimensionId = dimensionId.toString();
-        this.temperature = temperature;
-        this.humidity = humidity;
-        this.hostility = hostility;
-        this.biomeId = biomeId.toString();
-        this.resources = resources != null ? resources : Collections.emptyList();
+        this.type = type;
     }
     
-    public DimensionMetadata(String coordinate, String dimensionId,
-                             double temperature, double humidity, double hostility,
-                             String biomeId, List<String> resources) {
+    public DimensionMetadata(String coordinate, String dimensionId, String type) {
         this.coordinate = coordinate;
         this.dimensionId = dimensionId;
-        this.temperature = temperature;
-        this.humidity = humidity;
-        this.hostility = hostility;
-        this.biomeId = biomeId;
-        this.resources = resources != null ? resources : Collections.emptyList();
+        this.type = type;
     }
 
     public String getCoordinate() {
@@ -57,24 +40,8 @@ public class DimensionMetadata {
         return ResourceLocation.parse(dimensionId);
     }
 
-    public double getTemperature() {
-        return temperature;
-    }
-
-    public double getHumidity() {
-        return humidity;
-    }
-
-    public double getHostility() {
-        return hostility;
-    }
-
-    public ResourceLocation getBiomeId() {
-        return ResourceLocation.parse(biomeId);
-    }
-
-    public List<String> getResources() {
-        return resources;
+    public String getType() {
+        return type;
     }
 
     public ChunkGenerator createChunkGenerator(MinecraftServer server) {

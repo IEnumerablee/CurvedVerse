@@ -1,7 +1,6 @@
 package org.i212.curvedverse.dimension;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
 import com.mojang.logging.LogUtils;
 import net.commoble.infiniverse.api.InfiniverseAPI;
@@ -34,17 +33,24 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class CurvedverseDimensionRegistry extends SavedData {
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    private static final Gson GSON = new GsonBuilder()
+            .setPrettyPrinting()
+            .registerTypeAdapter(DimensionMetadata.class, (JsonDeserializer<DimensionMetadata>) (json, typeOfT, context) -> {
+                JsonObject jsonObject = json.getAsJsonObject();
+                String type = jsonObject.get("type").getAsString();
+                if (InterpolatedDimensionMetadata.TYPE.equals(type)) {
+                    return context.deserialize(json, InterpolatedDimensionMetadata.class);
+                } else if (SimpleDimensionMetadata.TYPE.equals(type)) {
+                    return context.deserialize(json, SimpleDimensionMetadata.class);
+                }
+                return null;
+            })
+            .create();
     private static final String SAVE_FILENAME = "curvedverse_dimensions.json";
     
     private final Map<String, DimensionMetadata> dimensions = new ConcurrentHashMap<>();
     private final MinecraftServer server;
 
-    public static final SavedData.Factory<CurvedverseDimensionRegistry> FACTORY = new SavedData.Factory<>(
-        null,
-        (tag, registryAccess) -> null,
-        null
-    );
 
     private CurvedverseDimensionRegistry(MinecraftServer server) {
         this.server = server;
@@ -169,21 +175,18 @@ public class CurvedverseDimensionRegistry extends SavedData {
     public Collection<DimensionMetadata> getAllDimensions() {
         return Collections.unmodifiableCollection(dimensions.values());
     }
-    
-    public ServerLevel createAndRegister(String key, ResourceLocation id,
-                                                double temperature, double humidity, double hostility,
-                                                ResourceLocation biomeId, List<String> resources) {
-        
-        LOGGER.info("Attempting to create dimension {} at key {}", id, key);
-        DimensionMetadata meta = new DimensionMetadata(key, id, temperature, humidity, hostility, biomeId, resources);
+
+    public ServerLevel createAndRegister(DimensionMetadata meta) {
+        LOGGER.info("Attempting to create dimension {} of type {} at key {}",
+            meta.getDimensionId(), meta.getType(), meta.getCoordinate());
 
         ServerLevel level = restoreDimension(meta);
 
         if (level != null) {
-            LOGGER.info("Successfully created dimension {}", id);
+            LOGGER.info("Successfully created dimension {}", meta.getDimensionId());
             registerDimension(meta);
         } else {
-            LOGGER.error("Failed to create dimension {}", id);
+            LOGGER.error("Failed to create dimension {}", meta.getDimensionId());
         }
         return level;
     }

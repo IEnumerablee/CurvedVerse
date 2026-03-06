@@ -33,6 +33,12 @@ public class Curvedverse {
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
+        event.enqueueWork(() -> {
+            org.i212.curvedverse.util.ifs.DragonCurveStrategy dragonCurve = new org.i212.curvedverse.util.ifs.DragonCurveStrategy();
+            dragonCurve.bake();
+            org.i212.curvedverse.util.ifs.IFSStrategy.register("DragonCurve", dragonCurve);
+            LOGGER.info("Registered and baked DragonCurve strategy");
+        });
         LOGGER.info("Curvedverse common setup complete");
     }
 

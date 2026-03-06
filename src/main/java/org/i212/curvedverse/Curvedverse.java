@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 import java.io.File;
 import java.io.FileInputStream;
 import java.nio.file.Path;
+import org.i212.curvedverse.util.attractor.WorldAttractorManager;
 
 @Mod(Curvedverse.MODID)
 public class Curvedverse {
@@ -53,6 +54,14 @@ public class Curvedverse {
             LOGGER.info("Initializing Curvedverse Dimension Registry...");
             registry = CurvedverseDimensionRegistry.getInstance(server);
             
+            LOGGER.info("Initializing World Attractor Manager...");
+            org.i212.curvedverse.util.ifs.IFSStrategy strategy = org.i212.curvedverse.util.ifs.IFSStrategy.get("DragonCurve").orElse(null);
+            if (strategy != null) {
+                WorldAttractorManager.get(server).generate(strategy);
+            } else {
+                 LOGGER.warn("DragonCurve strategy not found, attractors not generated!");
+            }
+
         } catch (Exception e) {
             LOGGER.error("Failed to initialize dimension registry", e);
             return;
